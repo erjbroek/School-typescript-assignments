@@ -1,10 +1,11 @@
+import MouseListener from './MouseListener.js';
+
 /**
  * Helper utlity class for working with the HTML Canvas Element.
  *
  * @version 1.1.1
  * @author Frans Blauw
  */
-
 export default class CanvasUtil {
   /**
    * @param canvas the canvas on which will be drawn
@@ -44,20 +45,50 @@ export default class CanvasUtil {
   }
 
   /**
+   * Loads a new images into an HTMLImageElements
+   * WARNING: This happens async. Therefor the result might not immediately be visible
    *
-   * @param canvas that canvas that it should be drawn on
-   * @param image the image to be drawn
-   * @param dx x-coordinate
-   * @param dy y-coordinate
+   * @param source the paths of the image to be loaded
+   * @param sources
+   * @param folder the folder in which the images are located, root by default
+   * @returns the array of images
    */
+  public static loadNewImages(sources: string[], folder?: string) {
+    const images: HTMLImageElement[] = [];
+    for (const source of sources) {
+      images.push(CanvasUtil.loadNewImage(folder ? folder + source : source));
+    }
+    return images;
+  }
+
   public static drawImage(
     canvas: HTMLCanvasElement,
     image: HTMLImageElement,
     dx: number,
     dy: number,
+    width: number = 0,
+    height: number = 0,
+    rotation: number = 0,
   ): void {
     const ctx: CanvasRenderingContext2D = CanvasUtil.getCanvasContext(canvas);
-    ctx.drawImage(image, dx, dy);
+
+    if (width === 0) width = image.width;
+    if (height === 0) height = image.height;
+
+    // Save the current state of the canvas
+    ctx.save();
+
+    // Move the origin to the center of the image
+    ctx.translate(dx + width / 2, dy + height / 2);
+
+    // Rotate the canvas
+    ctx.rotate((rotation * Math.PI) / 180);
+
+    // Draw the image back to its original position
+    ctx.drawImage(image, -width / 2, -height / 2, width, height);
+
+    // Restore the previous state of the canvas
+    ctx.restore();
   }
 
   /**
@@ -71,7 +102,6 @@ export default class CanvasUtil {
   }
 
   /**
-   * DEPRECATED: Please use writeText
    *
    * @param canvas Canvas to write to
    * @param text Text to write
@@ -91,8 +121,9 @@ export default class CanvasUtil {
     fontFamily: string = 'sans-serif',
     fontSize: number = 20,
     color: string = 'red',
-  ) {
-    this.writeText(canvas, text, xCoordinate, yCoordinate, alignment, fontFamily, fontSize, color);
+  ): void {
+    // eslint-disable-next-line max-len
+    CanvasUtil.writeText(canvas, text, xCoordinate, yCoordinate, alignment, fontFamily, fontSize, color);
   }
 
   /**
@@ -163,7 +194,7 @@ export default class CanvasUtil {
     width: number,
     height: number,
     color: string = 'red',
-  ) {
+  ): void {
     const ctx: CanvasRenderingContext2D = CanvasUtil.getCanvasContext(canvas);
     ctx.beginPath();
     ctx.strokeStyle = color;
@@ -211,11 +242,71 @@ export default class CanvasUtil {
     width: number,
     height: number,
     color: string = 'red',
-  ) {
+  ): void {
     const ctx: CanvasRenderingContext2D = CanvasUtil.getCanvasContext(canvas);
     ctx.beginPath();
     ctx.fillStyle = color;
     ctx.rect(dx, dy, width, height);
     ctx.fill();
+  }
+
+ /**
+ * Rotate an image on an HTML5 canvas.
+ *
+ * @param canvas the canvas to draw to
+ * @param image the image to rotate
+ * @param degrees the degrees to rotate the image
+ */
+  public static rotateImage(
+    canvas: HTMLCanvasElement,
+    image: HTMLImageElement,
+    degrees: number,
+  ): void {
+    const ctx: CanvasRenderingContext2D = CanvasUtil.getCanvasContext(canvas);
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((degrees * Math.PI) / 180);
+    ctx.drawImage(image, -image.width / 2, -image.height / 2);
+    ctx.restore();
+  }
+
+  /**
+   * @returns boolean
+   * @param object1 the first object to be used for collision checking
+   * @param object2 the second object to be used for collision checking
+   */
+  public static collidesWith(object1X: number, object1Y: number, object1Width: number, object1Height: number, object2X: number, object2Y: number, object2Width: number, object2Height: number): boolean {
+    if (
+      object1X < object2X + object2Width
+      && object1X + object1Width > object2X
+      && object1Y < object2Y + object2Height
+      && object1Y + object1Height > object2Y
+    ) {
+      // Collision detected
+      return true;
+    }
+
+    // No collision
+    return false;
+  }
+
+  /**
+   * @returns boolean
+   * @param object the selected image
+   * @param mouseX x position of the mouse
+   * @param mouseY y position of the mouse
+   */
+  public static mouseHover(objectX: number, objectY: number, objectWidth: number, objectHeight: number, mouseX: number, mouseY: number): boolean {
+    if (
+      mouseX > objectX
+      && mouseY > objectY
+      && mouseX < objectX + objectWidth
+      && mouseY < objectY + objectHeight
+    ) {
+      // Collision detected
+      return true;
+    }
+
+    // No collision
+    return false;
   }
 }
